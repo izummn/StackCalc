@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <String.h>
 #include <conio.h>
+#include <iostream>
+#include <assert.h>
 
-
-const int SIZE = 10;
+const int SIZE = 3;
 const int OPERATION_SIZE = 5;
 const char *ADD = "add";
 const char *SUB = "sub";
@@ -13,136 +14,222 @@ const char *DIV = "div";
 const char *POP = "pop";
 
 
-struct Stack{
-	double data[SIZE];
-	int count;
+void Input(char*, int*);
+void Start();
+void TestStackCalculation();
 
-	Stack()
-	{
-		count = 0;
-		for (int i = 0; i < SIZE; i++)
-			data[i] = NULL;
-	};
+template <typename T> 
+class Stack{
+public:
+	Stack();
+	Stack(const T data[], int);
+	bool OK();
+	FILE* Dump(FILE* out = stdout) const;
+	bool StackPush(T);
+	bool StackPop();
+	void Output();
+	bool StackCalculation(char*, T);
+	bool Add(T);
+	bool Mul(T);
+	bool Sub(T);
+	bool Div(T);
 	~Stack(){};
+
+private:
+	void InternalResize() { std::cout << " TODO "; };
+	int count_;
+	T data_[SIZE];
 };
 
-
-void StackPush(Stack* st, double value)
+template <typename T>
+Stack<T>::Stack() :
+count_(0)
 {
-	st->data[st->count++] = value;	
+	for (int i(0); i < SIZE; i++) data_[i] = 0;
+};
+
+template <typename T>
+Stack<T>::Stack(const T data[], int count) :
+count_(count)
+{
+	for (int i(0); i < SIZE; i++) data_[i] = data[i];
+};
+
+template <typename T>
+bool Stack<T>::OK()
+{
+	if (0 <= count_ && count_ < SIZE) return true;
+	else
+		if (count_ == SIZE) InternalResize();
+		else std::cout << " Stack is empty!" << std::endl;
+		return false;
+};
+
+template <typename T>
+bool Stack<T>::StackPush(T value)
+{
+	if (OK())
+	{
+		data_[count_++] = value;
+		return true;
+	}
+	else return false;
+
 }
 
-double StackPop(Stack* st)
-{	
-	if (st->count < 1) printf(" Error! ");
+template <typename T>
+bool Stack<T>::StackPop()
+{
+	count_--;
+	if (OK())
+	{
+		data_[count_] = 0;
+		return true;
+	}
 	else
 	{
-		st->count--;
-		double result = st->data[st->count];
-		st->data[st->count] = NULL;
-		return result;
+		count_++;
+		std::cout << " Error in operation POP! " << std::endl;
+		return false;
 	}
-	return 0;
 }
 
-void Add(Stack* st, double value)
+template <typename T>
+bool Stack<T>::Add(T value)
 {
-	StackPush(st, value);
-	st->data[st->count-2] += st->data[st->count - 1];
-	st->count--;
+	if (((count_ - 1) >= 0) && StackPush(value))
+	{
+		data_[count_ - 2] += data_[count_ - 1];
+		count_--;
+		return true;
+	}
+	else
+	{
+		std::cout << " Error in operation Add! " << std::endl;
+		return false;
+	}
 }
 
-void Mul(Stack* st, double value)
+template <typename T>
+bool Stack<T>::Mul(T value)
 {
-	StackPush(st, value);
-	st->data[st->count - 2] *= st->data[st->count - 1];
-	st->count--;
+	if (((count_ - 1) >= 0) && StackPush(value))
+	{
+		data_[count_ - 2] *= data_[count_ - 1];
+		count_--;
+		return true;
+	}
+	else 
+	{
+		std::cout << " Error in operation Mul! " << std::endl;
+		return false;
+	}
 }
 
-void Div(Stack* st, double value)
+
+template <typename T>
+bool Stack<T>::Div(T value)
 {
-	StackPush(st, value);
-	st->data[st->count - 2] = st->data[st->count - 2] / st->data[st->count - 1];
-	st->count--;
+	if (((count_ - 1) >= 0) && StackPush(value) && (data_[count_ - 1] != 0))
+	{
+		data_[count_ - 2] = data_[count_ - 2] / data_[count_ - 1];
+		count_--;
+		return true;
+	}
+	else
+	{
+		std::cout << " Error in operation Div! " << std::endl;
+		return false;
+	};
 }
 
-void Sub(Stack* st, double value)
+
+template <typename T>
+bool Stack<T>::Sub(T value)
 {
-	StackPush(st, value);
-	st->data[st->count - 2] = st->data[st->count - 2] - st->data[st->count - 1];
-	st->count--;
+	if (((count_ - 1) >= 0) && StackPush(value))
+	{
+		data_[count_ - 2] = data_[count_ - 2] - data_[count_ - 1];
+		count_--;
+		return true;
+	}
+	else 
+	{
+		std::cout << " Error in operation Sub! " << std::endl;
+		return false;
+	}
 }
 
-void Input(char* operation, double* value)
-{
-	printf(" Welcome to Stack Calculater! \n");
-	printf(" Please, enter operation and value: \n");
-	scanf_s("%s%lg", operation, OPERATION_SIZE, value);
-	
-}
-
-void Output(Stack* st)
+template <typename T>
+void Stack<T>::Output()
 {
 	printf(" Result: \n");
-	for (int i = 0; i < st->count; i++)
-		printf("[%d] = %lg;\n", i + 1, st->data[i]);
+	for (int i = 0; i < count_; i++)
+		std::cout << "[" << i + 1 << "] = " << data_[i] << std::endl;
 	printf("\n");
 }
 
-void StackCalculation(Stack* st, char* operation, double value)
+template <typename T>
+bool Stack<T>::StackCalculation(char* operation, T value)
 {
-	if (_stricmp(operation, ADD) == 0) { Add(st, value); return; };
-	if (_stricmp(operation, SUB) == 0) { Sub(st, value); return; };
-	if (_stricmp(operation, MUL) == 0) { Mul(st, value); return; };
-	if (_stricmp(operation, DIV) == 0) { Div(st, value); return; };
-	if (_stricmp(operation, PUSH) == 0) { StackPush(st, value); return; };
-	if (_stricmp(operation, POP) == 0) { StackPop(st); return; };
+	if (_stricmp(operation, ADD) == 0) { return Add(value); };
+	if (_stricmp(operation, MUL) == 0) { return Mul(value); };
+	if (_stricmp(operation, SUB) == 0) { return Sub(value); };
+	if (_stricmp(operation, DIV) == 0) { return Div(value); };
+	if (_stricmp(operation, PUSH) == 0) { return StackPush(value); };
+	if (_stricmp(operation, POP) == 0) { return StackPop(); };
 	printf("Incorrect operation! ");
+	return true;
 }
 
+template <typename T>
+void Input(char* operation, T* value)
+{
+	printf(" Welcome to Stack Calculater! \n");
+	printf(" Please, enter operation and value: \n");
+	std::cin >> operation >> *value;
+}
+
+template <typename T>
 void Start()
 {
-	Stack StackToCalc;
+	Stack<double> st;
 	char operation[OPERATION_SIZE];
-	double value = 0.0;
+	T value = 0;
 	int t = 0;
 	while (t == 0)
-	{ 
-		Input(operation, &value);
-		StackCalculation(&StackToCalc, operation, value);
-		Output(&StackToCalc);
+	{
+		Input<T>(operation, &value);
+		st.StackCalculation(operation, value);
+		st.Output();
 	}
 }
 
 void TestStackCalculation()
 {
-	Stack StackToCalc;
-	char operation[OPERATION_SIZE] = "";
-	int value = 0;
-	StackCalculation(&StackToCalc, "push", 3.8);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "push", 8.0);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "push", 1.2);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "add", 9.0);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "sub", 8.6);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "mul", 3.0);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "push", 87.6);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "div", 34.4);
-	Output(&StackToCalc);
-	StackCalculation(&StackToCalc, "pop", 0);
-	Output(&StackToCalc);
+	Stack<double> st;
+	st.StackCalculation("push", 3.6);
+	st.Output();
+	st.StackCalculation("div", 4.4);
+	st.Output();
+	st.StackCalculation("sub", 6.2);
+	st.Output();
+	st.StackCalculation("push", 3.8);
+	st.Output();
+	st.StackCalculation("div", 0.0);
+	st.Output();
+	st.StackCalculation("push", 4.5);
+	st.Output();
+	st.StackCalculation("pop", 0);
+	st.Output();
+	st.StackCalculation("mul", 3.4);
+	st.Output();
 }
 
 int main()
 {
 	TestStackCalculation();
-	//Start();
+	//Start<double>();
 
 	return 0;
 }
